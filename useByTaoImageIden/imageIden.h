@@ -11,6 +11,10 @@
 #include "ui_imageIden.h"
 #include "TQInputMethod.h"
 #include <QWSInputMethod>
+extern "C"
+{
+    #include "public.h"
+}
 
 class ImageIden : public QMainWindow
 {
