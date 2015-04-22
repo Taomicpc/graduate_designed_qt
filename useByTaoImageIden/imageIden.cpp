@@ -17,6 +17,7 @@
 #include "imageIden.h"
 
 #define CHANGE_STEP 50//按键改变舵机角度的步长
+int IshmId;
 shmType* shmPtr = NULL;//设置共享内存的全局变量指针
 
 //初始化全局变量shmPtr，建立本进程的内存链接，并进行初始化设置。
@@ -25,7 +26,6 @@ int shm_init(void)
 {
 //--------------共享内存建立链接--------------------
     key_t ipcKey;
-    int IshmId;
 
     ipcKey = ftok("./shm", 'a');
     if(ipcKey == -1)
@@ -52,6 +52,8 @@ int shm_init(void)
 
 //共享内存区初始化
     memset(shmPtr, 0, sizeof(shmType));
+    shmPtr->tower.hori_angle = 1000;
+    shmPtr->tower.veri_angle = 1000;//角度信号初始化
     //前一个1表明在进程间使用，后一个1设置一个信号量初始值，1是信号空闲，０是信号忙碌
     sem_init(&shmPtr->shmSem, 1, 1);
 
@@ -91,6 +93,7 @@ int shm_destroy(void)
 {
     sem_destroy(&shmPtr->shmSem);//销毁无名信号量
     shmctl(IshmId, IPC_RMID, 0);//删除共享内存映射区
+    return 0;
 }
 
 //直接创建各种进程，各进程创建后进入休眠状态。
@@ -101,39 +104,39 @@ int process_create(void)
 
     sprintf(SshmId, "%d", IshmId);
 
-    char* execvInput[] = {"./input", SshmId, NULL};
-    char* execvWtoFile[] = {"./wtofile", SshmId, argv[1], argv[2], NULL};
-    char* execvWtoLCD[] = {"./wtolcd", SshmId, NULL};
+    char* execvInput[] = {"./input", NULL};
+    char* execvWtoFile[] = {"./wtofile",NULL};
+    char* execvWtoLCD[] = {"./wtolcd",NULL};
     char* execvDeal[] = {"./deal", SshmId, NULL};
     char* execvTower[] = {"./tower", SshmId, NULL};
 
     if(fork()==0)//写入子进程,初始化后进入睡眠状态
     {
-        execv("./tower", execvTower, NULL);//启动共享资源写入进程
+        execv("./tower", execvTower);//启动共享资源写入进程
         perror("execv tower error");
     }
     
     if(fork()==0)//写入子进程,初始化后进入睡眠状态
     {
-        execv("./input", execvInput, NULL);//启动共享资源写入进程
+        execv("./input", execvInput);//启动共享资源写入进程
         perror("execv input error");
     }
 
     if(fork()==0)//缓冲区数据显示到lcd
     {
-        execv("./wtofile", execvWtoFile, NULL);//启动共享资源写入进程
+        execv("./wtofile", execvWtoFile);//启动共享资源写入进程
         perror("execv wtofile error");
     }
 
     if(fork()==0)//缓冲区数据显示到lcd
     {
-        execv("./wtolcd", execvWtoLCD, NULL);//启动共享资源写入进程
+        execv("./wtolcd", execvWtoLCD);//启动共享资源写入进程
         perror("execv wtolcd error");
     }
 
     if(fork()==0)//图像处理进程
     {
-        execv("./deal", execvDeal, NULL);//启动共享资源写入进程
+        execv("./deal", execvDeal);//启动共享资源写入进程
         perror("execv deal error");
     }
 
@@ -161,7 +164,7 @@ int process_destroy( void )
 
     int status;
 
-    while(wait(&status) != -1);//一直等待其产生的子进程都结束,每一次等待都是休眠
+    while(waitpid(-1, &status, 0) != -1);//一直等待其产生的子进程都结束,每一次等待都是休眠
 
     printf("all process exit\n");
 
@@ -434,6 +437,10 @@ void ImageIden::doWhenTimeout1()
 {
 	cout << "Refrash image" << endl;	
 	//刷新图片
+	
+	m_getImg->load("./image.jpg");
+	*m_getImg = m_getImg->scaled(QSize(250,330), Qt::IgnoreAspectRatio); //photo size
+	ui->labelPicture->setPixmap(QPixmap::fromImage(*m_getImg));
 
 }
 

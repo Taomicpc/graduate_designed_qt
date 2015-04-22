@@ -9,6 +9,7 @@
 #include "stdlib.h"
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/wait.h>
 #include "memory.h"
 #include "stdbool.h"
 #include "assert.h"

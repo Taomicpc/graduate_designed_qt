@@ -11,3 +11,5 @@ INCLUDEPATH += .
 HEADERS += imageIden.h public.h TQInputMethod.h
 FORMS += imageIden.ui
 SOURCES += imageIden.cpp main.cpp
+LIBS += -L. -lTQInputMethod
+
